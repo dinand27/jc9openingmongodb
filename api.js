@@ -19,8 +19,9 @@ MongoClient.connect(URL, {useNewUrlParser:true}, (err, client)=>{
     //do something with mongodb
     const db= client.db(database)
 
+    
     app.get('/user', (req,res)=>{
-        // ambil nilai umur dari user
+        // ambil value "name" dari user
         const data_name = (req.query.name)
          // get data by name
          db.collection('users').find({name: data_name}).toArray()
@@ -33,7 +34,7 @@ MongoClient.connect(URL, {useNewUrlParser:true}, (err, client)=>{
 
 
     app.get('/userbyage', (req,res)=>{
-        // ambil nilai umur dari user
+        // ambil nilai "umur" dari user
         const data_age = parseInt(req.query.age)
          // get data by umur
          db.collection('users').find({age: data_age}).toArray()
@@ -45,7 +46,7 @@ MongoClient.connect(URL, {useNewUrlParser:true}, (err, client)=>{
     })
 
     app.get('/userbymarried', (req,res)=>{
-        // ambil status maried dari user
+        // ambil status "maried" dari user
         const data_married = (req.query.married=== 'true')
          // get data by umur
          db.collection('users').find({married: data_married}).toArray()
@@ -54,6 +55,57 @@ MongoClient.connect(URL, {useNewUrlParser:true}, (err, client)=>{
              console.log(req.query.married)
          })
          // respon ke user
+    })
+
+    //mencari berdasarkan status dan umur
+    app.get('/usermarried',(req, res)=>{
+        const data_age= parseInt(req.query.age)
+        const data_married = (req.query.married=== 'true')
+
+    db.collection('users').find({
+        age: data_age,
+        married: data_married
+
+        }).toArray()
+        .then(result=>{
+            res.send(result)
+            console.log('Status '+req.query.married +', dan Umurnya'+ req.query.age)
+
+        })
+    })
+
+    // Mengambil data berdasarkan rentang umur
+    app.get('/usersrange', (req, res) => {
+        // Batas umur terendah
+        const data_age_min = parseInt(req.query.minimum)
+        // Batas umur tertinggi
+        const data_age_max = parseInt(req.query.maximum)
+
+        db.collection('users').find({
+            age: {
+                $gt: data_age_min,
+                $lt: data_age_max
+            }
+        }).toArray()
+        .then(result => {
+            res.send(result)
+            console.log(req.query.age)
+        })
+
+    })
+
+    //get by umur
+    app.get('/users/:umur', (req, res)=>{
+        const data_age= parseInt(req.params.umur)
+        db.collection('users').find({
+            age: data_age
+        }).toArray()
+        .then(result=>{
+            res.send({
+                message: "Data berhasil ditemukan",
+                data: result
+            })
+        })
     })
 
 
@@ -90,8 +142,41 @@ MongoClient.connect(URL, {useNewUrlParser:true}, (err, client)=>{
         })
     })
 
+    //delete satu user
+    app.delete('/users/:user_id', (req, res)=>{
+        const user_id= req.params.user_id
+
+        db.collection('users').deleteOne({
+            _id: new ObjectID(user_id)
+        }).then(result=>{
+            res.send(result)
+            console.log()
+        })
+    })
+
+  
+    // edit satu user berdasarkan id object
+    app.patch('/users/:user_id', (req, res ) => {
+        const user_id = req.params.user_id
+        const user_name = req.query.name
+
+        db.collection('users').updateOne({
+            // Cari user berdasarkan id
+            _id: new ObjectID(user_id)
+        }, {
+            // Update data (nama)
+            $set: {
+               name: user_name
+            }
+        }).then(result => {
+            // respon dari object result
+            res.send(result)
+        })
+    })
+
 
     
+    //end of function
 })
 
 app.listen(port, ()=>{
